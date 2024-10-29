@@ -8,7 +8,6 @@
 
 # Visual Studio and VS Code
 .vs
-.vscode
 .devcontainer
 
 # Build directories
@@ -30,3 +29,5 @@ public/*.wasm
 
 # Git
 *.stackdump
+
+**/.DS_Store
