@@ -1,123 +1,100 @@
 #include "window.hpp"
-#include "imgui.h"
+#include <glm/vec2.hpp>
 
 void Window::onCreate() {
-  auto const &windowSettings{getWindowSettings()};
-  fmt::print("Initial window size: {}x{}\n", windowSettings.width,
-             windowSettings.height);
+  // Shaders para o programa
+  auto const *vertexShader{R"gl(#version 300 es
+    layout(location = 0) in vec2 inPosition;
+    void main() {
+      gl_Position = vec4(inPosition, 0, 1);
+    }
+  )gl"};
+
+  auto const *fragmentShader{R"gl(#version 300 es
+    precision mediump float;
+    out vec4 outColor;
+    void main() { outColor = vec4(1.0, 1.0, 1.0, 1.0); }
+  )gl"};
+
+  // Cria o programa de shader
+  m_program = abcg::createOpenGLProgram({
+      {.source = vertexShader, .stage = abcg::ShaderStage::Vertex},
+      {.source = fragmentShader, .stage = abcg::ShaderStage::Fragment}
+  });
+
+  // Configuração inicial do tamanho das plataformas
+  vertices = {
+    // Plataforma esquerda (parte inferior)
+    -0.8f, -0.8f, // Ponto inferior esquerdo
+    -0.4f, -0.8f, // Ponto inferior direito
+    -0.4f, -0.7f, // Ponto superior direito
+    -0.8f, -0.7f, // Ponto superior esquerdo
+    
+    // Plataforma direita (parte superior)
+     0.4f, -0.3f, // Ponto inferior esquerdo
+     0.8f, -0.3f, // Ponto inferior direito
+     0.8f, -0.2f, // Ponto superior direito
+     0.4f, -0.2f  // Ponto superior esquerdo
+  };
+
+  // Configura o VBO e o VAO
+  setupModel();
 }
 
 void Window::onPaint() {
-  // Set the clear color
-  abcg::glClearColor(m_clearColor.at(0), m_clearColor.at(1), m_clearColor.at(2),
-                     m_clearColor.at(3));
-  // Clear the color buffer
+  // Limpa a tela com uma cor de fundo
+  abcg::glClearColor(0, 0, 0, 1);
   abcg::glClear(GL_COLOR_BUFFER_BIT);
+
+  // Configura o viewport
+  abcg::glViewport(0, 0, m_viewportSize.x, m_viewportSize.y);
+
+  // Usa o programa de shader
+  abcg::glUseProgram(m_program);
+  abcg::glBindVertexArray(m_VAO);
+
+  // Desenha os dois retângulos (plataformas)
+  abcg::glDrawArrays(GL_TRIANGLE_FAN, 0, 4);  // Desenha a primeira plataforma
+  abcg::glDrawArrays(GL_TRIANGLE_FAN, 4, 4);  // Desenha a segunda plataforma
+
+  abcg::glBindVertexArray(0);
+  abcg::glUseProgram(0);
 }
 
-void Window::showTutorialWindow() {
-  ImVec2 windowSize(300, 100);
-
-  auto const &windowSettings{getWindowSettings()};
-  float screenWidth = static_cast<float>(windowSettings.width);
-  float screenHeight = static_cast<float>(windowSettings.height);
-
-  ImVec2 windowPos((screenWidth - windowSize.x) / 2.0f,
-                   (screenHeight - windowSize.y) / 2.0f);
-
-  ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
-
-  // MENU
-  ImGui::SetNextWindowSize(windowSize);
-  auto flags{ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse};
-  ImGui::Begin("Tutorial", &m_showTutorialWindow, flags);
-  {
-    ImGui::Text("Bem-vindo ao Planeta X");
-    ImGui::Text("[Escrever aqui o tutorial]");
-  }
-
-  ImGui::End();
+void Window::onResize(glm::ivec2 const &size) {
+  m_viewportSize = size;
 }
 
-void Window::onPaintUI() {
-  auto const appWindowWidth{gsl::narrow<float>(getWindowSettings().width)};
-  auto const appWindowHeight{gsl::narrow<float>(getWindowSettings().height)};
+void Window::onDestroy() {
+  // Libera o programa de shader, VBO e VAO
+  abcg::glDeleteProgram(m_program);
+  abcg::glDeleteBuffers(1, &m_VBO);
+  abcg::glDeleteVertexArrays(1, &m_VAO);
+}
 
-  {
-    ImGui::SetNextWindowSize(ImVec2(appWindowWidth, appWindowHeight));
-    ImGui::SetNextWindowPos(ImVec2(0, 0));
-    // ImGui::SetNextWindowFocus();
+void Window::setupModel() {
+  // Libera os VBO e VAO anteriores, se houver
+  abcg::glDeleteBuffers(1, &m_VBO);
+  abcg::glDeleteVertexArrays(1, &m_VAO);
 
-    auto const flags{ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoResize |
-                     ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus};
-    ImGui::Begin("Planeta X", nullptr, flags);
+  // Gera e configura o VBO
+  abcg::glGenBuffers(1, &m_VBO);
+  abcg::glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
+  abcg::glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GLfloat),
+                     vertices.data(), GL_STATIC_DRAW);
+  abcg::glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    // Menu
-    {
-      if (ImGui::BeginMenuBar()) {
-        if (ImGui::BeginMenu("Ajuda")) {
-          if (ImGui::MenuItem("Tutorial")) {
-            m_showTutorialWindow = true;
-          }
-          ImGui::EndMenu();
-        }
-        ImGui::EndMenuBar();
-      }
+  // Obtenção do atributo de posição no programa de shader
+  auto const positionAttribute{abcg::glGetAttribLocation(m_program, "inPosition")};
 
-      if (m_showTutorialWindow) {
-        showTutorialWindow();
-      }
-    }
+  // Gera e configura o VAO
+  abcg::glGenVertexArrays(1, &m_VAO);
+  abcg::glBindVertexArray(m_VAO);
 
-    // Subjanela de configurações de parametros
-    {
-      ImGui::SetCursorPos(ImVec2(5, 50));
-      ImGui::BeginChild("Propriedades", ImVec2(280, 180), false, 
-                        ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
+  abcg::glEnableVertexAttribArray(positionAttribute);
+  abcg::glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
+  abcg::glVertexAttribPointer(positionAttribute, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+  abcg::glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-      ImGui::Dummy(ImVec2(0.0f, 5.0f));
-      ImGui::Indent(15.0f);
-
-      // Slider para ajustar a gravidade
-      ImGui::Text("Gravidade do Planeta");
-      static float g{};
-      ImGui::SliderFloat("m/s2", &g, 0.0f, 200.0f);
-
-      ImGui::Spacing();
-
-      ImGui::Text("Massa do Astronauta");
-      static float m{};
-      ImGui::SliderFloat("kg", &m, 0.0f, 200.0f);
-
-      ImGui::Spacing();
-
-      ImGui::Text("Força do jato");
-      static float jato{};
-      ImGui::SliderFloat("kg", &jato, 0.0f, 200.0f);
-
-      ImGui::Unindent(15.0f);
-
-      ImGui::EndChild();
-    }
-
-    // {
-    //   ImGui::SetNextWindowPos(ImVec2(5, 50), ImGuiCond_Always);
-    //   ImGui::SetNextWindowSize(ImVec2(300, 100));
-    //   auto flags2 {
-    //     ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-    //     ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove};
-    //   ImGui::Begin("Propriedades" ,nullptr, flags2);
-
-    //   // Static text
-    //   ImGui::Text("Gravidade");
-
-    //   // Slider from 0.0f to 1.0f
-    //   static float f{};
-    //   ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
-
-    //   ImGui::End();
-    // }
-
-    ImGui::End();
-  }
+  abcg::glBindVertexArray(0);
 }
