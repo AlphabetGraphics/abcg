@@ -1,4 +1,5 @@
 #include "window.hpp"
+#include "imgui.h"
 
 void Window::onCreate() {
   auto const &windowSettings{getWindowSettings()};
@@ -39,17 +40,16 @@ void Window::showTutorialWindow() {
 }
 
 void Window::onPaintUI() {
-  // Parent class will show fullscreen button and FPS meter
-  // abcg::OpenGLWindow::onPaintUI();
   auto const appWindowWidth{gsl::narrow<float>(getWindowSettings().width)};
   auto const appWindowHeight{gsl::narrow<float>(getWindowSettings().height)};
 
   {
     ImGui::SetNextWindowSize(ImVec2(appWindowWidth, appWindowHeight));
     ImGui::SetNextWindowPos(ImVec2(0, 0));
+    // ImGui::SetNextWindowFocus();
 
     auto const flags{ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoResize |
-                     ImGuiWindowFlags_NoCollapse};
+                     ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus};
     ImGui::Begin("Planeta X", nullptr, flags);
 
     // Menu
@@ -68,6 +68,55 @@ void Window::onPaintUI() {
         showTutorialWindow();
       }
     }
+
+    // Subjanela de configurações de parametros
+    {
+      ImGui::SetCursorPos(ImVec2(5, 50));
+      ImGui::BeginChild("Propriedades", ImVec2(280, 180), false, 
+                        ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
+
+      ImGui::Dummy(ImVec2(0.0f, 5.0f));
+      ImGui::Indent(15.0f);
+
+      // Slider para ajustar a gravidade
+      ImGui::Text("Gravidade do Planeta");
+      static float g{};
+      ImGui::SliderFloat("m/s2", &g, 0.0f, 200.0f);
+
+      ImGui::Spacing();
+
+      ImGui::Text("Massa do Astronauta");
+      static float m{};
+      ImGui::SliderFloat("kg", &m, 0.0f, 200.0f);
+
+      ImGui::Spacing();
+
+      ImGui::Text("Força do jato");
+      static float jato{};
+      ImGui::SliderFloat("kg", &jato, 0.0f, 200.0f);
+
+      ImGui::Unindent(15.0f);
+
+      ImGui::EndChild();
+    }
+
+    // {
+    //   ImGui::SetNextWindowPos(ImVec2(5, 50), ImGuiCond_Always);
+    //   ImGui::SetNextWindowSize(ImVec2(300, 100));
+    //   auto flags2 {
+    //     ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+    //     ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove};
+    //   ImGui::Begin("Propriedades" ,nullptr, flags2);
+
+    //   // Static text
+    //   ImGui::Text("Gravidade");
+
+    //   // Slider from 0.0f to 1.0f
+    //   static float f{};
+    //   ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
+
+    //   ImGui::End();
+    // }
 
     ImGui::End();
   }
