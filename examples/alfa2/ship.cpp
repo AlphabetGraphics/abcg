@@ -166,3 +166,19 @@ void Ship::update(GameData const &gameData, float deltaTime) {
     m_velocity += forward * deltaTime;
   }
 }
+
+// void Ship::update(GameData const &gameData, float deltaTime) {
+//   // Rotate
+//   if (gameData.m_input[gsl::narrow<size_t>(Input::Left)])
+//     m_rotation = glm::wrapAngle(m_rotation + 4.0f * deltaTime);
+//   if (gameData.m_input[gsl::narrow<size_t>(Input::Right)])
+//     m_rotation = glm::wrapAngle(m_rotation - 4.0f * deltaTime);
+
+//   // Apply thrust
+//   if (gameData.m_input[gsl::narrow<size_t>(Input::Up)] &&
+//       gameData.m_state == State::Playing) {
+//     // Thrust in the forward vector
+//     auto const forward{glm::rotate(glm::vec2{0.0f, 1.0f}, m_rotation)};
+//     m_velocity += forward * deltaTime;
+//   }
+// }

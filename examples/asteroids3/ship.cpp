@@ -152,17 +152,71 @@ void Ship::destroy() {
 }
 
 void Ship::update(GameData const &gameData, float deltaTime) {
-  // Rotate
-  if (gameData.m_input[gsl::narrow<size_t>(Input::Left)])
-    m_rotation = glm::wrapAngle(m_rotation + 4.0f * deltaTime);
-  if (gameData.m_input[gsl::narrow<size_t>(Input::Right)])
-    m_rotation = glm::wrapAngle(m_rotation - 4.0f * deltaTime);
+  const float maxRotation = glm::radians(25.0f);  // 45 degrees in radians
+  const float rotationSpeed = glm::radians(120.0f);  // Rotation speed (degrees per second)
+  const float returnSpeed = glm::radians(120.0f);    // Speed to return to center
 
-  // Apply thrust
-  if (gameData.m_input[gsl::narrow<size_t>(Input::Up)] &&
-      gameData.m_state == State::Playing) {
-    // Thrust in the forward vector
-    auto const forward{glm::rotate(glm::vec2{0.0f, 1.0f}, m_rotation)};
-    m_velocity += forward * deltaTime;
+  float m_left_thrust{1.5f};
+  float m_right_thrust{1.5f};
+  float m_gravity_acceleration{1.0f};
+
+  const float leftThrustAngle = glm::radians(-135.0f);    // Down-left direction
+  const float rightThrustAngle = glm::radians(-45.0f);    // Down-right direction
+  const float gravityAngle = glm::radians(-90.0f);        // Downward
+
+  // Calculate directional vectors from angles
+  const glm::vec2 leftThrustDirection = glm::vec2{cos(leftThrustAngle), sin(leftThrustAngle)};
+  const glm::vec2 rightThrustDirection = glm::vec2{cos(rightThrustAngle), sin(rightThrustAngle)};
+  const glm::vec2 gravityDirection = glm::vec2{cos(gravityAngle), sin(gravityAngle)};
+
+  bool isLeftPressed = gameData.m_input[gsl::narrow<size_t>(Input::Left)];
+  bool isRightPressed = gameData.m_input[gsl::narrow<size_t>(Input::Right)];
+
+  // Inverted controls: pressing Left rotates right, pressing Right rotates left
+  if (isLeftPressed && !isRightPressed) {
+    m_rotation -= rotationSpeed * deltaTime;  // Rotate right
+  } else if (isRightPressed && !isLeftPressed) {
+    m_rotation += rotationSpeed * deltaTime;  // Rotate left
   }
+  // No input or both keys pressed: smoothly return to center
+  else {
+    // Gradually move `m_rotation` towards zero
+    if (m_rotation > 0) {
+      m_rotation = std::max(0.0f, m_rotation - returnSpeed * deltaTime);
+    } else if (m_rotation < 0) {
+      m_rotation = std::min(0.0f, m_rotation + returnSpeed * deltaTime);
+    }
+  }
+
+  // Clamp the rotation to the specified range
+  m_rotation = std::clamp(m_rotation, -maxRotation, maxRotation);
+
+  // Apply left thrust
+  if (gameData.m_input[gsl::narrow<size_t>(Input::Left)]) {
+    m_velocity -= m_left_thrust * leftThrustDirection * deltaTime;
+  }
+
+  // Apply right thrust
+  if (gameData.m_input[gsl::narrow<size_t>(Input::Right)]) {
+    m_velocity -= m_right_thrust * rightThrustDirection * deltaTime;
+  }
+
+  // Apply gravity
+  m_velocity += m_gravity_acceleration * gravityDirection * deltaTime;
 }
+
+// void Ship::update(GameData const &gameData, float deltaTime) {
+//   // Rotate
+//   if (gameData.m_input[gsl::narrow<size_t>(Input::Left)])
+//     m_rotation = glm::wrapAngle(m_rotation + 4.0f * deltaTime);
+//   if (gameData.m_input[gsl::narrow<size_t>(Input::Right)])
+//     m_rotation = glm::wrapAngle(m_rotation - 4.0f * deltaTime);
+
+//   // Apply thrust
+//   if (gameData.m_input[gsl::narrow<size_t>(Input::Up)] &&
+//       gameData.m_state == State::Playing) {
+//     // Thrust in the forward vector
+//     auto const forward{glm::rotate(glm::vec2{0.0f, 1.0f}, m_rotation)};
+//     m_velocity += forward * deltaTime;
+//   }
+// }
