@@ -17,6 +17,10 @@ public:
   float m_scale{0.125f};
   glm::vec2 m_translation{};
   glm::vec2 m_velocity{};
+  float m_mass{};
+  float m_force{};
+  glm::vec2 m_left_thrust{};
+  glm::vec2 m_right_thrust{};
 
   abcg::Timer m_trailBlinkTimer;
   abcg::Timer m_bulletCoolDownTimer;

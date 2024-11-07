@@ -26,29 +26,6 @@ void Window::onEvent(SDL_Event const &event) {
     if (event.key.keysym.sym == SDLK_RIGHT || event.key.keysym.sym == SDLK_d)
       m_gameData.m_input.reset(gsl::narrow<size_t>(Input::Right));
   }
-
-  // Mouse events
-  if (event.type == SDL_MOUSEBUTTONDOWN) {
-    if (event.button.button == SDL_BUTTON_LEFT)
-      m_gameData.m_input.set(gsl::narrow<size_t>(Input::Fire));
-    if (event.button.button == SDL_BUTTON_RIGHT)
-      m_gameData.m_input.set(gsl::narrow<size_t>(Input::Up));
-  }
-  if (event.type == SDL_MOUSEBUTTONUP) {
-    if (event.button.button == SDL_BUTTON_LEFT)
-      m_gameData.m_input.reset(gsl::narrow<size_t>(Input::Fire));
-    if (event.button.button == SDL_BUTTON_RIGHT)
-      m_gameData.m_input.reset(gsl::narrow<size_t>(Input::Up));
-  }
-  if (event.type == SDL_MOUSEMOTION) {
-    glm::ivec2 mousePosition;
-    SDL_GetMouseState(&mousePosition.x, &mousePosition.y);
-
-    glm::vec2 direction{mousePosition.x - m_viewportSize.x / 2,
-                        -(mousePosition.y - m_viewportSize.y / 2)};
-
-    m_ship.m_rotation = std::atan2(direction.y, direction.x) - M_PI_2;
-  }
 }
 
 void Window::onCreate() {
