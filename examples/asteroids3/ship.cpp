@@ -230,14 +230,14 @@ void Ship::paint(const GameData &gameData) {
       // 50% transparent
       abcg::glUniform4f(m_colorLoc, 1, 1, 1, 0.5f);
 
-      abcg::glDrawElements(GL_TRIANGLES, 14 * 3, GL_UNSIGNED_INT, nullptr);
+      abcg::glDrawElements(GL_TRIANGLES, 18 * 3, GL_UNSIGNED_INT, nullptr);
 
       abcg::glDisable(GL_BLEND);
     }
   }
 
   abcg::glUniform4fv(m_colorLoc, 1, &m_color.r);
-  abcg::glDrawElements(GL_TRIANGLES, 12 * 3, GL_UNSIGNED_INT, nullptr);
+  abcg::glDrawElements(GL_TRIANGLES, 18 * 3, GL_UNSIGNED_INT, nullptr);
 
   abcg::glBindVertexArray(0);
 
