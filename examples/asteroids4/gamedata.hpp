@@ -9,7 +9,6 @@ enum class State { Playing, GameOver, Win };
 struct GameData {
   State m_state{State::Playing};
   std::bitset<2> m_input;  // [left, right]
-  float m_gravity{};
   float m_time{};
 
 };
