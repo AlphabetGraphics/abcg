@@ -93,7 +93,7 @@ void Window::restart() {
 
   m_starLayers.create(m_starsProgram, 25);
   m_ship.create(m_objectsProgram);
-  m_asteroids.create(m_objectsProgram, 3);
+  m_asteroids.create(m_objectsProgram, 25);
   m_bullets.create(m_objectsProgram);
 }
 
@@ -172,14 +172,18 @@ void Window::onDestroy() {
 
 void Window::checkCollisions() {
   // Check collision between ship and asteroids
-  for (auto const &asteroid : m_asteroids.m_asteroids) {
+  for (auto &asteroid : m_asteroids.m_asteroids) {
     auto const asteroidTranslation{asteroid.m_translation};
     auto const distance{
         glm::distance(m_ship.m_translation, asteroidTranslation)};
 
-    if (distance < m_ship.m_scale * 0.9f + asteroid.m_scale * 0.85f) {
-      m_gameData.m_state = State::GameOver;
-      m_restartWaitTimer.restart();
+    if (distance < m_ship.m_scale * 0.85f + asteroid.m_scale * 0.85f) {
+      // m_gameData.m_state = State::GameOver;
+
+      // m_restartWaitTimer.restart();
+
+      asteroid.m_hit = true;
+
     }
   }
 
@@ -218,8 +222,8 @@ void Window::checkCollisions() {
       }
     }
 
-    m_asteroids.m_asteroids.remove_if([](auto const &a) { return a.m_hit; });
   }
+  m_asteroids.m_asteroids.remove_if([](auto const &a) { return a.m_hit; });
 }
 
 void Window::checkWinCondition() {

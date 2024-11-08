@@ -32,7 +32,7 @@ public:
 
   std::list<Asteroid> m_asteroids;
 
-  Asteroid makeAsteroid(glm::vec2 translation = {}, float scale = 0.25f);
+  Asteroid makeAsteroid(glm::vec2 translation = {}, float scale = 0.02f);
 
 private:
   GLuint m_program{};
