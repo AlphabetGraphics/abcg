@@ -40,6 +40,12 @@ void Window::onCreate() {
     throw abcg::RuntimeError("Cannot load font file");
   }
 
+  m_smallFont = ImGui::GetIO().Fonts->AddFontFromFileTTF(filename.c_str(), 20.0f);
+  if (m_font == nullptr) {
+    throw abcg::RuntimeError("Cannot load font file");
+  }
+
+
   // Create program to render the other objects
   m_objectsProgram =
       abcg::createOpenGLProgram({{.source = assetsPath + "objects.vert",
@@ -78,6 +84,10 @@ void Window::restart() {
 void Window::onUpdate() {
   auto const deltaTime{gsl::narrow_cast<float>(getDeltaTime())};
 
+  if (m_gameData.m_state != State::Win) {
+    m_gameData.m_time += deltaTime;
+  }
+
   // Wait 5 seconds before restarting
   if (m_gameData.m_state != State::Playing &&
       m_restartWaitTimer.elapsed() > 5) {
@@ -104,31 +114,95 @@ void Window::onPaint() {
   m_ship.paint(m_gameData);
 }
 
+// void Window::onPaintUI() {
+//   abcg::OpenGLWindow::onPaintUI();
+
+//   {
+//     auto const size{ImVec2(300, 85)};
+//     auto const position{ImVec2((m_viewportSize.x - size.x) / 2.0f,
+//                                (m_viewportSize.y - size.y) / 2.0f)};
+//     ImGui::SetNextWindowPos(position);
+//     ImGui::SetNextWindowSize(size);
+//     ImGuiWindowFlags const flags{ImGuiWindowFlags_NoBackground |
+//                                  ImGuiWindowFlags_NoTitleBar |
+//                                  ImGuiWindowFlags_NoInputs};
+//     ImGui::Begin(" ", nullptr, flags);
+//     ImGui::PushFont(m_font);
+
+//     if (m_gameData.m_state == State::GameOver) {
+//       ImGui::Text("Game Over!");
+//     } else if (m_gameData.m_state == State::Win) {
+//       ImGui::Text("*You Win!*");
+//     }
+
+//     ImGui::PopFont();
+//     ImGui::End();
+//   }
+// }
+
 void Window::onPaintUI() {
   abcg::OpenGLWindow::onPaintUI();
 
-  {
-    auto const size{ImVec2(300, 85)};
-    auto const position{ImVec2((m_viewportSize.x - size.x) / 2.0f,
-                               (m_viewportSize.y - size.y) / 2.0f)};
-    ImGui::SetNextWindowPos(position);
-    ImGui::SetNextWindowSize(size);
-    ImGuiWindowFlags const flags{ImGuiWindowFlags_NoBackground |
-                                 ImGuiWindowFlags_NoTitleBar |
-                                 ImGuiWindowFlags_NoInputs};
-    ImGui::Begin(" ", nullptr, flags);
-    ImGui::PushFont(m_font);
+  // Set window to full screen
+  auto const size{ImVec2(m_viewportSize.x, m_viewportSize.y)};
+  auto const position{ImVec2(0.0f, 0.0f)};
+  ImGui::SetNextWindowPos(position);
+  ImGui::SetNextWindowSize(size);
+  ImGuiWindowFlags const flags{ImGuiWindowFlags_NoBackground |
+                               ImGuiWindowFlags_NoTitleBar |
+                               ImGuiWindowFlags_NoInputs};
+  ImGui::Begin(" ", nullptr, flags);
 
-    if (m_gameData.m_state == State::GameOver) {
-      ImGui::Text("Game Over!");
-    } else if (m_gameData.m_state == State::Win) {
-      ImGui::Text("*You Win!*");
-    }
+  // Center text on the screen
+  ImGui::PushFont(m_font);  // Main font for the win message
+  if (m_gameData.m_state == State::Win) {
+    // Display the win message at the top center
+    ImGui::SetCursorPosY(m_viewportSize.y / 2.0f - 50.0f); // Adjust vertical position
+    ImGui::SetCursorPosX((m_viewportSize.x - ImGui::CalcTextSize("*You Win!*").x) / 2.0f);
+    ImGui::Text("*You Win!*");
 
+    // Display the score below in a different font size
+    ImGui::PushFont(m_smallFont);  // Use a smaller or larger font for the score
+    ImGui::SetCursorPosY(m_viewportSize.y / 2.0f);  // Position below the win message
+    ImGui::SetCursorPosX((m_viewportSize.x - ImGui::CalcTextSize("Score: %.2f").x) / 2.0f);
+    ImGui::Text("Time: %.2f", m_gameData.m_time);  // Print score
     ImGui::PopFont();
-    ImGui::End();
   }
+  ImGui::PopFont();
+
+  ImGui::End();
 }
+
+
+// void Window::onPaintUI() {
+//   abcg::OpenGLWindow::onPaintUI();
+
+//   auto const size{ImVec2(300, 85)};
+//   auto const position{ImVec2((m_viewportSize.x - size.x) / 2.0f,
+//                              (m_viewportSize.y - size.y) / 2.0f)};
+//   ImGui::SetNextWindowPos(position);
+//   ImGui::SetNextWindowSize(size);
+//   ImGuiWindowFlags const flags{ImGuiWindowFlags_NoBackground |
+//                                ImGuiWindowFlags_NoTitleBar |
+//                                ImGuiWindowFlags_NoInputs};
+//   ImGui::Begin(" ", nullptr, flags);
+//   ImGui::PushFont(m_font);
+
+//   if (m_gameData.m_state == State::GameOver) {
+//     ImGui::Text("Game Over!");
+//   } else if (m_gameData.m_state == State::Win) {
+//     ImGui::Text("*You Win!*");
+
+//     // Use a different font size for the Score
+//     ImGui::PushFont(m_smallFont);  // Set to smaller or larger font
+//     ImGui::Text("Score: %.2f", m_gameData.m_time);  // Display score with new font size
+//     ImGui::PopFont();  // Revert to previous font
+//   }
+
+//   ImGui::PopFont();
+//   ImGui::End();
+// }
+
 
 void Window::onResize(glm::ivec2 const &size) {
   m_viewportSize = size;
