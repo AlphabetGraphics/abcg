@@ -1,28 +1,47 @@
 #ifndef WINDOW_HPP_
 #define WINDOW_HPP_
 
+#include <random>
+
 #include "abcgOpenGL.hpp"
-#include <array>
-#include <glm/vec2.hpp>
+
+#include "asteroids.hpp"
+// #include "bullets.hpp"
+#include "ship.hpp"
+#include "starlayers.hpp"
 
 class Window : public abcg::OpenGLWindow {
-public:
+protected:
+  void onEvent(SDL_Event const &event) override;
   void onCreate() override;
+  void onUpdate() override;
   void onPaint() override;
-  void onDestroy() override;
+  void onPaintUI() override;
   void onResize(glm::ivec2 const &size) override;
+  void onDestroy() override;
 
 private:
-  void setupModel();
+  glm::ivec2 m_viewportSize{};
 
-  GLuint m_program{0};        // ID do programa de shader
-  GLuint m_VBO{0};            // ID do VBO (para armazenar os vértices)
-  GLuint m_VAO{0};            // ID do VAO (para configurar os atributos dos vértices)
+  GLuint m_starsProgram{};
+  GLuint m_objectsProgram{};
 
-  // Armazenando as coordenadas dos vértices para os dois retângulos (plataformas)
-  std::array<GLfloat, 16> vertices; // 4 vértices com 2 coordenadas cada
+  GameData m_gameData;
 
-  glm::ivec2 m_viewportSize{};  // Tamanho da janela
+  Asteroids m_asteroids;
+  Ship m_ship;
+  StarLayers m_starLayers;
+
+  abcg::Timer m_restartWaitTimer;
+
+  ImFont *m_font{};
+  ImFont *m_smallFont{};
+
+  std::default_random_engine m_randomEngine;
+
+  void restart();
+  void checkCollisions();
+  void checkWinCondition();
 };
 
 #endif
