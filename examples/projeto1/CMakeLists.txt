@@ -1,3 +1,4 @@
-project(projeto1)
-add_executable(${PROJECT_NAME} main.cpp window.cpp)
+project(asteroids4)
+add_executable(${PROJECT_NAME} main.cpp window.cpp asteroids.cpp
+                               ship.cpp starlayers.cpp)
 enable_abcg(${PROJECT_NAME})
