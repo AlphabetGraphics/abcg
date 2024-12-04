@@ -15,7 +15,7 @@ void Window::onCreate() {
                                  {.source = assetsPath + "depth.frag",
                                   .stage = abcg::ShaderStage::Fragment}});
 
-  m_model.loadObj(assetsPath + "asteroid.obj");
+  m_model.loadObj(assetsPath + "torus.obj");
   m_model.setupVAO(m_program);
 
   // Camera at (0,0,0) and looking towards the negative z
@@ -43,13 +43,15 @@ void Window::randomizeStar(Star &star, int index) {
   star.m_position = glm::vec3(x, y, z);
 
   // Define um eixo de rotação aleatório
-  star.m_rotationAxis = glm::sphericalRand(1.0f);
+  // star.m_rotationAxis = glm::sphericalRand(1.0f);
+  star.m_rotationAxis = glm::vec3(1.0, 1.0, 1.0);
 }
 
 void Window::onUpdate() {
   // Increase angle by 90 degrees per second
   auto const deltaTime{gsl::narrow_cast<float>(getDeltaTime())};
-  m_angle = glm::wrapAngle(m_angle + glm::radians(90.0f) * deltaTime);
+  // m_angle = glm::wrapAngle(m_angle + glm::radians(90.0f) * deltaTime);
+  m_angle = glm::wrapAngle(m_angle );
 
   // Update stars
   for (size_t i = 0; i < m_stars.size(); ++i) {

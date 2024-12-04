@@ -21,6 +21,7 @@ private:
   glm::ivec2 m_viewportSize{};
 
   Model m_model;
+  Model m_ship;
 
   struct Star {
     glm::vec3 m_position{};
@@ -29,7 +30,7 @@ private:
 
   std::array<Star, 100> m_stars;
 
-  float m_angle{};
+  float m_angle{90.0};
 
   glm::mat4 m_viewMatrix{1.0f};
   glm::mat4 m_projMatrix{1.0f};
