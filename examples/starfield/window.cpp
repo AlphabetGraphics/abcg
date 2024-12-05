@@ -79,8 +79,8 @@ void Window::onEvent(SDL_Event const &event) {
   }
 
   // Limites para evitar que o astronauta saia da tela
-  m_ship.m_position.x = std::clamp(m_ship.m_position.x, -0.6f, 0.6f);
-  m_ship.m_position.y = std::clamp(m_ship.m_position.y, -0.6f, 0.6f);
+  m_ship.m_position.x = std::clamp(m_ship.m_position.x, -0.5f, 0.5f);
+  m_ship.m_position.y = std::clamp(m_ship.m_position.y, -0.5f, 0.5f);
 }
 
 void Window::onUpdate() {
