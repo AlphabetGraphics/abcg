@@ -118,7 +118,7 @@ void Window::onPaint() {
   glm::mat4 modelMatrix{1.0f};
   modelMatrix = glm::translate(modelMatrix, m_ship.m_position); // Parte inferior central
   modelMatrix = glm::scale(modelMatrix, glm::vec3(0.2f)); // Ajusta o tamanho
-  modelMatrix = glm::rotate(modelMatrix, m_angle, m_ship.m_rotationAxis);
+  modelMatrix = glm::rotate(modelMatrix, 11.0f, m_ship.m_rotationAxis);
 
   // Usamos uma matriz de identidade para manter o astronauta fixo
   // glm::mat4 identityMatrix{1.0f};
