@@ -18,6 +18,9 @@ void Window::onCreate() {
   m_model.loadObj(assetsPath + "torus.obj");
   m_model.setupVAO(m_program);
 
+  m_model_ship.loadObj(assetsPath + "ship.obj");
+  m_model_ship.setupVAO(m_program);
+
   // Camera at (0,0,0) and looking towards the negative z
   glm::vec3 const eye{0.0f, 0.0f, 0.0f};
   glm::vec3 const at{0.0f, 0.0f, -1.0f};
@@ -28,6 +31,16 @@ void Window::onCreate() {
   for (size_t i = 0; i < m_stars.size(); ++i) {
     randomizeStar(m_stars[i], i);
   }
+
+  float x = 0.0f;
+  float y = -0.3f; // Mantém Y fixo
+  float z = -2.0f; // Mantém Z fixo
+
+  m_ship.m_position = glm::vec3(x, y, z);
+
+  // Define um eixo de rotação aleatório
+  // star.m_rotationAxis = glm::sphericalRand(1.0f);
+  m_ship.m_rotationAxis = glm::vec3(0.1f, 0.0f, 0.0f);
 }
 
 void Window::randomizeStar(Star &star, int index) {
@@ -51,7 +64,7 @@ void Window::onUpdate() {
   // Increase angle by 90 degrees per second
   auto const deltaTime{gsl::narrow_cast<float>(getDeltaTime())};
   // m_angle = glm::wrapAngle(m_angle + glm::radians(90.0f) * deltaTime);
-  m_angle = glm::wrapAngle(m_angle );
+  m_angle = glm::wrapAngle(m_angle);
 
   // Update stars
   for (size_t i = 0; i < m_stars.size(); ++i) {
@@ -100,6 +113,25 @@ void Window::onPaint() {
 
     m_model.render();
   }
+
+  // Desenhar o astronauta fixo
+  glm::mat4 modelMatrix{1.0f};
+  modelMatrix = glm::translate(modelMatrix, m_ship.m_position); // Parte inferior central
+  modelMatrix = glm::scale(modelMatrix, glm::vec3(0.2f)); // Ajusta o tamanho
+  modelMatrix = glm::rotate(modelMatrix, m_angle, m_ship.m_rotationAxis);
+
+  // Usamos uma matriz de identidade para manter o astronauta fixo
+  // glm::mat4 identityMatrix{1.0f};
+
+  // Enviar as matrizes para o shader
+  abcg::glUniformMatrix4fv(modelMatrixLoc, 1, GL_FALSE, &modelMatrix[0][0]);
+  // abcg::glUniformMatrix4fv(viewMatrixLoc, 1, GL_FALSE, &identityMatrix[0][0]);
+  // abcg::glUniformMatrix4fv(projMatrixLoc, 1, GL_FALSE, &m_projMatrix[0][0]);
+  // abcg::glUniformMatrix4fv(modelMatrixLoc, 1, GL_FALSE, &modelMatrix[0][0]);
+  // abcg::glUniform4f(colorLoc, 1.0f, 1.0f, 1.0f, 1.0f);
+
+  // Renderizar o astronauta
+  m_model_ship.render();
 
   abcg::glUseProgram(0);
 }

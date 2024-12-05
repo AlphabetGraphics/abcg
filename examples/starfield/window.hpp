@@ -21,14 +21,20 @@ private:
   glm::ivec2 m_viewportSize{};
 
   Model m_model;
-  Model m_ship;
+  Model m_model_ship;
 
   struct Star {
     glm::vec3 m_position{};
     glm::vec3 m_rotationAxis{};
   };
 
+  struct Ship {
+    glm::vec3 m_position{};
+    glm::vec3 m_rotationAxis{};
+  };
+
   std::array<Star, 100> m_stars;
+  Ship m_ship;
 
   float m_angle{90.0};
 
