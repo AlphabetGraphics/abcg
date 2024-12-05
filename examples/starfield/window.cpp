@@ -60,6 +60,29 @@ void Window::randomizeStar(Star &star, int index) {
   star.m_rotationAxis = glm::vec3(1.0, 1.0, 1.0);
 }
 
+void Window::onEvent(SDL_Event const &event) {
+  if (event.type == SDL_KEYDOWN) {
+    switch (event.key.keysym.sym) {
+    case SDLK_UP: // Mover para cima
+      m_ship.m_position.y += 0.1f;
+      break;
+    case SDLK_DOWN: // Mover para baixo
+      m_ship.m_position.y -= 0.1f;
+      break;
+    case SDLK_LEFT: // Mover para a esquerda
+      m_ship.m_position.x -= 0.1f;
+      break;
+    case SDLK_RIGHT: // Mover para a direita
+      m_ship.m_position.x += 0.1f;
+      break;
+    }
+  }
+
+  // Limites para evitar que o astronauta saia da tela
+  m_ship.m_position.x = std::clamp(m_ship.m_position.x, -0.6f, 0.6f);
+  m_ship.m_position.y = std::clamp(m_ship.m_position.y, -0.6f, 0.6f);
+}
+
 void Window::onUpdate() {
   // Increase angle by 90 degrees per second
   auto const deltaTime{gsl::narrow_cast<float>(getDeltaTime())};

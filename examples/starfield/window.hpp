@@ -14,6 +14,7 @@ protected:
   void onPaintUI() override;
   void onResize(glm::ivec2 const &size) override;
   void onDestroy() override;
+  void onEvent(SDL_Event const &event) override;
 
 private:
   std::default_random_engine m_randomEngine;
