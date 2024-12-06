@@ -60,49 +60,118 @@ void Window::randomizeStar(Star &star, int index) {
   star.m_rotationAxis = glm::vec3(1.0, 1.0, 1.0);
 }
 
+// void Window::onEvent(SDL_Event const &event) {
+//   if (event.type == SDL_KEYDOWN) {
+//     switch (event.key.keysym.sym) {
+//     case SDLK_UP: // Mover para cima
+//       m_ship.m_position.y += 0.1f;
+//       break;
+//     case SDLK_DOWN: // Mover para baixo
+//       m_ship.m_position.y -= 0.1f;
+//       break;
+//     case SDLK_LEFT: // Mover para a esquerda
+//       m_ship.m_position.x -= 0.1f;
+//       break;
+//     case SDLK_RIGHT: // Mover para a direita
+//       m_ship.m_position.x += 0.1f;
+//       break;
+//     }
+//   }
+
+//   // Limites para evitar que o astronauta saia da tela
+//   m_ship.m_position.x = std::clamp(m_ship.m_position.x, -0.5f, 0.5f);
+//   m_ship.m_position.y = std::clamp(m_ship.m_position.y, -0.5f, 0.5f);
+// }
+
 void Window::onEvent(SDL_Event const &event) {
+  static bool spacePressed = false; // Track if SPACE is pressed
+
   if (event.type == SDL_KEYDOWN) {
     switch (event.key.keysym.sym) {
-    case SDLK_UP: // Mover para cima
-      m_ship.m_position.y += 0.1f;
+    case SDLK_SPACE: // Track SPACE key
+      spacePressed = true;
       break;
-    case SDLK_DOWN: // Mover para baixo
-      m_ship.m_position.y -= 0.1f;
+
+    case SDLK_UP: 
+      if (spacePressed) { // Move forward (z-axis)
+        m_ship.m_position.z -= 0.1f;
+      } else { // Move up (y-axis)
+        m_ship.m_position.y += 0.1f;
+      }
       break;
-    case SDLK_LEFT: // Mover para a esquerda
+
+    case SDLK_DOWN: 
+      if (spacePressed) { // Move backward (z-axis)
+        m_ship.m_position.z += 0.1f;
+      } else { // Move down (y-axis)
+        m_ship.m_position.y -= 0.1f;
+      }
+      break;
+
+    case SDLK_LEFT: // Move left (x-axis)
       m_ship.m_position.x -= 0.1f;
       break;
-    case SDLK_RIGHT: // Mover para a direita
+
+    case SDLK_RIGHT: // Move right (x-axis)
       m_ship.m_position.x += 0.1f;
       break;
     }
+  } else if (event.type == SDL_KEYUP) {
+    if (event.key.keysym.sym == SDLK_SPACE) {
+      spacePressed = false; // Release SPACE key
+    }
   }
 
-  // Limites para evitar que o astronauta saia da tela
+  // Clamp positions to defined bounds
   m_ship.m_position.x = std::clamp(m_ship.m_position.x, -0.5f, 0.5f);
   m_ship.m_position.y = std::clamp(m_ship.m_position.y, -0.5f, 0.5f);
+  // m_ship.m_position.z = std::clamp(m_ship.m_position.z, 0.0f, 5.0f); // Assuming bounds for z-axis
 }
+
 
 void Window::onUpdate() {
   // Increase angle by 90 degrees per second
   auto const deltaTime{gsl::narrow_cast<float>(getDeltaTime())};
-  // m_angle = glm::wrapAngle(m_angle + glm::radians(90.0f) * deltaTime);
   m_angle = glm::wrapAngle(m_angle);
+
+  // Define grid dimensions
+  constexpr int gridCols = 10; // Number of columns in the grid
+  constexpr int gridSpacing = 2; // Spacing between stars in the grid
+  constexpr float bounceAmplitude = 0.5f; // Amplitude of the bouncing motion
+  constexpr float bounceSpeed = 1.0f; // Speed of the bouncing motion
+
+  static float time = 0.0f; // Time accumulator for sine wave
+  time += deltaTime;
 
   // Update stars
   for (size_t i = 0; i < m_stars.size(); ++i) {
     auto &star = m_stars[i];
 
-    // Move estrela ao longo do eixo Z
+    // Compute grid position based on index
+    int row = i / gridCols;  // Row index
+    int col = i % gridCols;  // Column index
+
+    // Calculate bouncing offset for the row
+    float direction = (row % 2 == 0) ? 1.0f : -1.0f; // Alternate directions
+    float offsetX = direction * bounceAmplitude * std::sin(time * bounceSpeed);
+
+    // Update star position
+    star.m_position.x = col * gridSpacing - (gridCols * gridSpacing) / 2 + offsetX;
+    star.m_position.y = row * gridSpacing - (gridCols * gridSpacing) / 2; // Center the grid on Y
+
+    // Move star along the Z axis
     star.m_position.z += deltaTime * 10.0f;
 
-    // Reposicionar estrela atrás da câmera
+    // Reposition the star behind the camera if it passes the threshold on Z-axis
     if (star.m_position.z > 0.1f) {
       randomizeStar(star, i);
-      star.m_position.z = -100.0f; // Volta para Z inicial
+
+      // Reset position based on grid
+      star.m_position.z = -100.0f; // Reset to initial Z position
     }
   }
 }
+
 
 void Window::onPaint() {
   abcg::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
