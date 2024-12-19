@@ -5,6 +5,7 @@
 
 #include "abcgOpenGL.hpp"
 #include "model.hpp"
+#include "trackball.hpp"
 
 class Window : public abcg::OpenGLWindow {
 protected:
@@ -24,7 +25,10 @@ private:
   Model m_model;
   Model m_model_ship;
   int m_trianglesToDraw{};
-  glm::mat4 m_lightRotation {};
+
+  TrackBall m_trackBallModel;
+  TrackBall m_trackBallLight;
+  float m_zoom{};
 
   struct Star {
     glm::vec3 m_position{};

@@ -2,4 +2,5 @@
 # add_subdirectory(projeto1)
 # add_subdirectory(asteroids4)
 # add_subdirectory(starfield)
-add_subdirectory(projeto3)
+# add_subdirectory(projeto3)
+add_subdirectory(projeto4)

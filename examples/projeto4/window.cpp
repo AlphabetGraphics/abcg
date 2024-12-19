@@ -11,12 +11,6 @@ void Window::onCreate() {
   abcg::glClearColor(0, 0, 0, 1);
   abcg::glEnable(GL_DEPTH_TEST);
 
-  // m_program =
-  //     abcg::createOpenGLProgram({{.source = assetsPath + "depth.vert",
-  //                                 .stage = abcg::ShaderStage::Vertex},
-  //                                {.source = assetsPath + "depth.frag",
-  //                                 .stage = abcg::ShaderStage::Fragment}});
-
   // Create programs
   for (auto const &name : m_shaderNames) {
     auto const path{assetsPath + "shaders/" + name};
@@ -26,14 +20,9 @@ void Window::onCreate() {
     m_programs.push_back(program);
   }
 
-  // m_model.loadObj(assetsPath + "torus.obj");
-  // m_model.setupVAO(m_program);
-
-  // m_model_ship.loadObj(assetsPath + "ship.obj");
-  // m_model_ship.setupVAO(m_program);
-
   // Load ship model
   loadModel(m_model_ship, assetsPath + "ship.obj");
+  m_trianglesToDraw = m_model_ship.getNumTriangles();
 
   // Load torus model
   loadModel(m_model, assetsPath + "torus.obj");
@@ -70,7 +59,7 @@ void Window::loadModel(Model& model, std::string_view path) {
   model.loadCubeTexture(assetsPath + "maps/cube/");
   model.loadObj(path);
   model.setupVAO(m_programs.at(m_currentProgramIndex));
-  m_trianglesToDraw = model.getNumTriangles();
+  // m_trianglesToDraw = model.getNumTriangles();
 
   // Use material properties from the loaded model
   m_Ka = model.getKa();
@@ -96,30 +85,35 @@ void Window::randomizeStar(Star &star, int index) {
   star.m_rotationAxis = glm::vec3(1.0, 1.0, 1.0);
 }
 
-// void Window::onEvent(SDL_Event const &event) {
-//   if (event.type == SDL_KEYDOWN) {
-//     switch (event.key.keysym.sym) {
-//     case SDLK_UP: // Mover para cima
-//       m_ship.m_position.y += 0.1f;
-//       break;
-//     case SDLK_DOWN: // Mover para baixo
-//       m_ship.m_position.y -= 0.1f;
-//       break;
-//     case SDLK_LEFT: // Mover para a esquerda
-//       m_ship.m_position.x -= 0.1f;
-//       break;
-//     case SDLK_RIGHT: // Mover para a direita
-//       m_ship.m_position.x += 0.1f;
-//       break;
-//     }
-//   }
-
-//   // Limites para evitar que o astronauta saia da tela
-//   m_ship.m_position.x = std::clamp(m_ship.m_position.x, -0.5f, 0.5f);
-//   m_ship.m_position.y = std::clamp(m_ship.m_position.y, -0.5f, 0.5f);
-// }
-
 void Window::onEvent(SDL_Event const &event) {
+  glm::ivec2 mousePosition;
+  SDL_GetMouseState(&mousePosition.x, &mousePosition.y);
+
+  if (event.type == SDL_MOUSEMOTION) {
+    m_trackBallModel.mouseMove(mousePosition);
+    m_trackBallLight.mouseMove(mousePosition);
+  }
+  if (event.type == SDL_MOUSEBUTTONDOWN) {
+    if (event.button.button == SDL_BUTTON_LEFT) {
+      m_trackBallModel.mousePress(mousePosition);
+    }
+    if (event.button.button == SDL_BUTTON_RIGHT) {
+      m_trackBallLight.mousePress(mousePosition);
+    }
+  }
+  if (event.type == SDL_MOUSEBUTTONUP) {
+    if (event.button.button == SDL_BUTTON_LEFT) {
+      m_trackBallModel.mouseRelease(mousePosition);
+    }
+    if (event.button.button == SDL_BUTTON_RIGHT) {
+      m_trackBallLight.mouseRelease(mousePosition);
+    }
+  }
+  if (event.type == SDL_MOUSEWHEEL) {
+    m_zoom += (event.wheel.y > 0 ? -1.0f : 1.0f) / 5.0f;
+    m_zoom = glm::clamp(m_zoom, -1.5f, 1.0f);
+  }
+
   static bool spacePressed = false; // Track if SPACE is pressed
 
   if (event.type == SDL_KEYDOWN) {
@@ -218,7 +212,7 @@ void Window::onPaint() {
   auto const program{m_programs.at(m_currentProgramIndex)};
   abcg::glUseProgram(program);
 
-   // Get location of uniform variables
+  // Get location of uniform variables
   auto const viewMatrixLoc{abcg::glGetUniformLocation(program, "viewMatrix")};
   auto const projMatrixLoc{abcg::glGetUniformLocation(program, "projMatrix")};
   auto const modelMatrixLoc{abcg::glGetUniformLocation(program, "modelMatrix")};
@@ -247,21 +241,21 @@ void Window::onPaint() {
   abcg::glUniform1i(cubeTexLoc, 2);
   abcg::glUniform1i(mappingModeLoc, m_mappingMode);
 
-  glm::mat3 const texMatrix{m_lightRotation};
+  glm::mat3 const texMatrix{m_trackBallLight.getRotation()};
   abcg::glUniformMatrix3fv(texMatrixLoc, 1, GL_TRUE, &texMatrix[0][0]);
 
-  auto const lightDirRotated{m_lightRotation * m_lightDir};
+  auto const lightDirRotated{m_trackBallLight.getRotation() * m_lightDir};
   abcg::glUniform4fv(lightDirLoc, 1, &lightDirRotated.x);
   abcg::glUniform4fv(IaLoc, 1, &m_Ia.x);
   abcg::glUniform4fv(IdLoc, 1, &m_Id.x);
   abcg::glUniform4fv(IsLoc, 1, &m_Is.x);
 
-  // Set uniform variables for the current model
-  abcg::glUniformMatrix4fv(modelMatrixLoc, 1, GL_FALSE, &m_modelMatrix[0][0]);
+  // // Set uniform variables for the current model
+  // abcg::glUniformMatrix4fv(modelMatrixLoc, 1, GL_FALSE, &m_modelMatrix[0][0]);
 
-  auto const modelViewMatrix{glm::mat3(m_viewMatrix * m_modelMatrix)};
-  auto const normalMatrix{glm::inverseTranspose(modelViewMatrix)};
-  abcg::glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, &normalMatrix[0][0]);
+  // auto const modelViewMatrix{glm::mat3(m_viewMatrix * m_modelMatrix)};
+  // auto const normalMatrix{glm::inverseTranspose(modelViewMatrix)};
+  // abcg::glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, &normalMatrix[0][0]);
 
   abcg::glUniform4fv(KaLoc, 1, &m_Ka.x);
   abcg::glUniform4fv(KdLoc, 1, &m_Kd.x);
@@ -304,20 +298,173 @@ void Window::onPaint() {
   abcg::glUseProgram(0);
 }
 
+// void Window::onPaintUI() {
+//   abcg::OpenGLWindow::onPaintUI();
+
+//   {
+//     auto const widgetSize{ImVec2(218, 62)};
+//     ImGui::SetNextWindowPos(ImVec2(m_viewportSize.x - widgetSize.x - 5, 5));
+//     ImGui::SetNextWindowSize(widgetSize);
+//     ImGui::Begin("Widget window", nullptr, ImGuiWindowFlags_NoDecoration);
+
+//     {
+//       ImGui::PushItemWidth(120);
+//       static std::size_t currentIndex{};
+//       std::vector<std::string> const comboItems{"Perspective", "Orthographic"};
+
+//       if (ImGui::BeginCombo("Projection",
+//                             comboItems.at(currentIndex).c_str())) {
+//         for (auto const index : iter::range(comboItems.size())) {
+//           auto const isSelected{currentIndex == index};
+//           if (ImGui::Selectable(comboItems.at(index).c_str(), isSelected))
+//             currentIndex = index;
+//           if (isSelected)
+//             ImGui::SetItemDefaultFocus();
+//         }
+//         ImGui::EndCombo();
+//       }
+//       ImGui::PopItemWidth();
+
+//       ImGui::PushItemWidth(170);
+//       auto const aspect{gsl::narrow<float>(m_viewportSize.x) /
+//                         gsl::narrow<float>(m_viewportSize.y)};
+//       if (currentIndex == 0) {
+//         m_projMatrix =
+//             glm::perspective(glm::radians(m_FOV), aspect, 0.01f, 100.0f);
+
+//         ImGui::SliderFloat("FOV", &m_FOV, 5.0f, 179.0f, "%.0f degrees");
+//       } else {
+//         m_projMatrix = glm::ortho(-20.0f * aspect, 20.0f * aspect, -20.0f,
+//                                   20.0f, 0.01f, 100.0f);
+//       }
+//       ImGui::PopItemWidth();
+//     }
+
+//     ImGui::End();
+//   }
+// }
+
+// void Window::onResize(glm::ivec2 const &size) { m_viewportSize = size; }
+
+// void Window::onDestroy() {
+//   m_model.destroy();
+//   abcg::glDeleteProgram(m_program);
+// }
+
 void Window::onPaintUI() {
   abcg::OpenGLWindow::onPaintUI();
 
+  auto const scaledWidth{gsl::narrow_cast<int>(m_viewportSize.x * 0.8f)};
+  auto const scaledHeight{gsl::narrow_cast<int>(m_viewportSize.y * 0.8f)};
+
+  // File browser for models
+  static ImGui::FileBrowser fileDialogModel;
+  fileDialogModel.SetTitle("Load 3D Model");
+  fileDialogModel.SetTypeFilters({".obj"});
+  fileDialogModel.SetWindowSize(scaledWidth, scaledHeight);
+
+  // File browser for textures
+  static ImGui::FileBrowser fileDialogDiffuseMap;
+  fileDialogDiffuseMap.SetTitle("Load Diffuse Map");
+  fileDialogDiffuseMap.SetTypeFilters({".jpg", ".png"});
+  fileDialogDiffuseMap.SetWindowSize(scaledWidth, scaledHeight);
+
+  // File browser for normal maps
+  static ImGui::FileBrowser fileDialogNormalMap;
+  fileDialogNormalMap.SetTitle("Load Normal Map");
+  fileDialogNormalMap.SetTypeFilters({".jpg", ".png"});
+  fileDialogNormalMap.SetWindowSize(scaledWidth, scaledHeight);
+
+#if defined(__EMSCRIPTEN__)
+  auto const assetsPath{abcg::Application::getAssetsPath()};
+  fileDialogModel.SetPwd(assetsPath);
+  fileDialogDiffuseMap.SetPwd(assetsPath + "/maps");
+  fileDialogNormalMap.SetPwd(assetsPath + "/maps");
+#endif
+
+  // Create main window widget
   {
-    auto const widgetSize{ImVec2(218, 62)};
+    auto widgetSize{ImVec2(222, 190)};
+
+    if (!m_model.isUVMapped()) {
+      // Add extra space for static text
+      widgetSize.y += 26;
+    }
+
     ImGui::SetNextWindowPos(ImVec2(m_viewportSize.x - widgetSize.x - 5, 5));
     ImGui::SetNextWindowSize(widgetSize);
-    ImGui::Begin("Widget window", nullptr, ImGuiWindowFlags_NoDecoration);
+    ImGui::Begin("Widget window", nullptr,
+                 ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDecoration);
 
+    // Menu
     {
-      ImGui::PushItemWidth(120);
-      static std::size_t currentIndex{};
-      std::vector<std::string> const comboItems{"Perspective", "Orthographic"};
+      bool loadModel{};
+      bool loadDiffuseMap{};
+      bool loadNormalMap{};
+      if (ImGui::BeginMenuBar()) {
+        if (ImGui::BeginMenu("File")) {
+          ImGui::MenuItem("Load 3D Model...", nullptr, &loadModel);
+          ImGui::MenuItem("Load Diffuse Map...", nullptr, &loadDiffuseMap);
+          ImGui::MenuItem("Load Normal Map...", nullptr, &loadNormalMap);
+          ImGui::EndMenu();
+        }
+        ImGui::EndMenuBar();
+      }
+      if (loadModel)
+        fileDialogModel.Open();
+      if (loadDiffuseMap)
+        fileDialogDiffuseMap.Open();
+      if (loadNormalMap)
+        fileDialogNormalMap.Open();
+    }
 
+    // Slider will be stretched horizontally
+    ImGui::PushItemWidth(widgetSize.x - 16);
+    ImGui::SliderInt(" ", &m_trianglesToDraw, 0, m_model.getNumTriangles(),
+                     "%d triangles");
+    ImGui::PopItemWidth();
+
+    static bool faceCulling{};
+    ImGui::Checkbox("Back-face culling", &faceCulling);
+
+    if (faceCulling) {
+      abcg::glEnable(GL_CULL_FACE);
+    } else {
+      abcg::glDisable(GL_CULL_FACE);
+    }
+
+    // CW/CCW combo box
+    {
+      static std::size_t currentIndex{};
+      std::vector<std::string> const comboItems{"CCW", "CW"};
+
+      ImGui::PushItemWidth(120);
+      if (ImGui::BeginCombo("Front face",
+                            comboItems.at(currentIndex).c_str())) {
+        for (auto const index : iter::range(comboItems.size())) {
+          auto const isSelected{currentIndex == index};
+          if (ImGui::Selectable(comboItems.at(index).c_str(), isSelected))
+            currentIndex = index;
+          if (isSelected)
+            ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+      }
+      ImGui::PopItemWidth();
+
+      if (currentIndex == 0) {
+        abcg::glFrontFace(GL_CCW);
+      } else {
+        abcg::glFrontFace(GL_CW);
+      }
+    }
+
+    // Projection combo box
+    {
+      static std::size_t currentIndex{};
+      std::vector<std::string> comboItems{"Perspective", "Orthographic"};
+
+      ImGui::PushItemWidth(120);
       if (ImGui::BeginCombo("Projection",
                             comboItems.at(currentIndex).c_str())) {
         for (auto const index : iter::range(comboItems.size())) {
@@ -331,28 +478,144 @@ void Window::onPaintUI() {
       }
       ImGui::PopItemWidth();
 
-      ImGui::PushItemWidth(170);
       auto const aspect{gsl::narrow<float>(m_viewportSize.x) /
                         gsl::narrow<float>(m_viewportSize.y)};
       if (currentIndex == 0) {
         m_projMatrix =
-            glm::perspective(glm::radians(m_FOV), aspect, 0.01f, 100.0f);
-
-        ImGui::SliderFloat("FOV", &m_FOV, 5.0f, 179.0f, "%.0f degrees");
+            glm::perspective(glm::radians(45.0f), aspect, 0.1f, 5.0f);
       } else {
-        m_projMatrix = glm::ortho(-20.0f * aspect, 20.0f * aspect, -20.0f,
-                                  20.0f, 0.01f, 100.0f);
+        m_projMatrix =
+            glm::ortho(-1.0f * aspect, 1.0f * aspect, -1.0f, 1.0f, 0.1f, 5.0f);
+      }
+    }
+
+    // Shader combo box
+    {
+      static std::size_t currentIndex{};
+
+      ImGui::PushItemWidth(120);
+      if (ImGui::BeginCombo("Shader", m_shaderNames.at(currentIndex))) {
+        for (auto const index : iter::range(m_shaderNames.size())) {
+          auto const isSelected{currentIndex == index};
+          if (ImGui::Selectable(m_shaderNames.at(index), isSelected))
+            currentIndex = index;
+          if (isSelected)
+            ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+      }
+      ImGui::PopItemWidth();
+
+      // Set up VAO if shader program has changed
+      if (gsl::narrow<int>(currentIndex) != m_currentProgramIndex) {
+        m_currentProgramIndex = gsl::narrow<int>(currentIndex);
+        m_model.setupVAO(m_programs.at(m_currentProgramIndex));
+      }
+    }
+
+    if (!m_model.isUVMapped()) {
+      ImGui::TextColored(ImVec4(1, 1, 0, 1), "Mesh has no UV coords.");
+    }
+
+    // UV mapping box
+    {
+      std::vector<std::string> comboItems{"Triplanar", "Cylindrical",
+                                          "Spherical"};
+
+      if (m_model.isUVMapped())
+        comboItems.emplace_back("From mesh");
+
+      ImGui::PushItemWidth(120);
+      if (ImGui::BeginCombo("UV mapping",
+                            comboItems.at(m_mappingMode).c_str())) {
+        for (auto const index : iter::range(comboItems.size())) {
+          auto const isSelected{m_mappingMode == static_cast<int>(index)};
+          if (ImGui::Selectable(comboItems.at(index).c_str(), isSelected))
+            m_mappingMode = index;
+          if (isSelected)
+            ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
       }
       ImGui::PopItemWidth();
     }
 
     ImGui::End();
   }
+
+  // Create window for light sources
+  if (m_currentProgramIndex >= 2 && m_currentProgramIndex <= 6) {
+    auto const widgetSize{ImVec2(222, 244)};
+    ImGui::SetNextWindowPos(ImVec2(m_viewportSize.x - widgetSize.x - 5,
+                                   m_viewportSize.y - widgetSize.y - 5));
+    ImGui::SetNextWindowSize(widgetSize);
+    ImGui::Begin(" ", nullptr, ImGuiWindowFlags_NoDecoration);
+
+    ImGui::Text("Light properties");
+
+    // Slider to control light properties
+    ImGui::PushItemWidth(widgetSize.x - 36);
+    ImGui::ColorEdit3("Ia", &m_Ia.x, ImGuiColorEditFlags_Float);
+    ImGui::ColorEdit3("Id", &m_Id.x, ImGuiColorEditFlags_Float);
+    ImGui::ColorEdit3("Is", &m_Is.x, ImGuiColorEditFlags_Float);
+    ImGui::PopItemWidth();
+
+    ImGui::Spacing();
+
+    ImGui::Text("Material properties");
+
+    // Slider to control material properties
+    ImGui::PushItemWidth(widgetSize.x - 36);
+    ImGui::ColorEdit3("Ka", &m_Ka.x, ImGuiColorEditFlags_Float);
+    ImGui::ColorEdit3("Kd", &m_Kd.x, ImGuiColorEditFlags_Float);
+    ImGui::ColorEdit3("Ks", &m_Ks.x, ImGuiColorEditFlags_Float);
+    ImGui::PopItemWidth();
+
+    // Slider to control the specular shininess
+    ImGui::PushItemWidth(widgetSize.x - 16);
+    ImGui::SliderFloat(" ", &m_shininess, 0.0f, 500.0f, "shininess: %.1f");
+    ImGui::PopItemWidth();
+
+    ImGui::End();
+  }
+
+  fileDialogModel.Display();
+  if (fileDialogModel.HasSelected()) {
+    loadModel(m_model_ship, fileDialogModel.GetSelected().string());
+    fileDialogModel.ClearSelected();
+
+    if (m_model.isUVMapped()) {
+      // Use mesh texture coordinates if available...
+      m_mappingMode = 3;
+    } else {
+      // ...or triplanar mapping otherwise
+      m_mappingMode = 0;
+    }
+  }
+
+  fileDialogDiffuseMap.Display();
+  if (fileDialogDiffuseMap.HasSelected()) {
+    m_model.loadDiffuseTexture(fileDialogDiffuseMap.GetSelected().string());
+    fileDialogDiffuseMap.ClearSelected();
+  }
+
+  fileDialogNormalMap.Display();
+  if (fileDialogNormalMap.HasSelected()) {
+    m_model.loadNormalTexture(fileDialogNormalMap.GetSelected().string());
+    fileDialogNormalMap.ClearSelected();
+  }
 }
 
-void Window::onResize(glm::ivec2 const &size) { m_viewportSize = size; }
+void Window::onResize(glm::ivec2 const &size) {
+  m_viewportSize = size;
+  m_trackBallModel.resizeViewport(size);
+  m_trackBallLight.resizeViewport(size);
+}
 
 void Window::onDestroy() {
   m_model.destroy();
-  abcg::glDeleteProgram(m_program);
+  m_model_ship.destroy();
+  for (auto const &program : m_programs) {
+    abcg::glDeleteProgram(program);
+  }
 }
