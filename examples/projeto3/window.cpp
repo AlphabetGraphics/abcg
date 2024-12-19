@@ -10,9 +10,9 @@ void Window::onCreate() {
   abcg::glEnable(GL_DEPTH_TEST);
 
   m_program =
-      abcg::createOpenGLProgram({{.source = assetsPath + "gouraud.vert",
+      abcg::createOpenGLProgram({{.source = assetsPath + "phong.vert",
                                   .stage = abcg::ShaderStage::Vertex},
-                                 {.source = assetsPath + "gouraud.frag",
+                                 {.source = assetsPath + "phong.frag",
                                   .stage = abcg::ShaderStage::Fragment}});
 
   m_model.loadObj(assetsPath + "torus.obj");
