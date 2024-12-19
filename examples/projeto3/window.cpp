@@ -15,11 +15,11 @@ void Window::onCreate() {
                                  {.source = assetsPath + "/shaders/phong.frag",
                                   .stage = abcg::ShaderStage::Fragment}});
 
-  m_model.loadDiffuseTexture(assetsPath + "maps/pattern.png");
+  m_model.loadDiffuseTexture(assetsPath + "maps/texture-gold.jpg");
   m_model.loadObj(assetsPath + "torus.obj");
   m_model.setupVAO(m_program);
 
-  m_model_ship.loadDiffuseTexture(assetsPath + "maps/pattern.png");
+  m_model_ship.loadDiffuseTexture(assetsPath + "maps/texture-rust.jpg");
   m_model_ship.loadObj(assetsPath + "ship.obj");
   m_model_ship.setupVAO(m_program);
 
