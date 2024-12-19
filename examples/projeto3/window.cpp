@@ -10,16 +10,20 @@ void Window::onCreate() {
   abcg::glEnable(GL_DEPTH_TEST);
 
   m_program =
-      abcg::createOpenGLProgram({{.source = assetsPath + "phong.vert",
+      abcg::createOpenGLProgram({{.source = assetsPath + "/shaders/phong.vert",
                                   .stage = abcg::ShaderStage::Vertex},
-                                 {.source = assetsPath + "phong.frag",
+                                 {.source = assetsPath + "/shaders/phong.frag",
                                   .stage = abcg::ShaderStage::Fragment}});
 
+  m_model.loadDiffuseTexture(assetsPath + "maps/pattern.png");
   m_model.loadObj(assetsPath + "torus.obj");
   m_model.setupVAO(m_program);
 
+  m_model_ship.loadDiffuseTexture(assetsPath + "maps/pattern.png");
   m_model_ship.loadObj(assetsPath + "ship.obj");
   m_model_ship.setupVAO(m_program);
+
+  m_mappingMode = 0; // "From mesh" option
 
   // Camera at (0,0,0) and looking towards the negative z
   glm::vec3 const eye{0.0f, 0.0f, 0.0f};
@@ -176,10 +180,14 @@ void Window::onPaint() {
   auto const KaLoc{abcg::glGetUniformLocation(m_program, "Ka")};
   auto const KdLoc{abcg::glGetUniformLocation(m_program, "Kd")};
   auto const KsLoc{abcg::glGetUniformLocation(m_program, "Ks")};
+  auto const diffuseTexLoc{abcg::glGetUniformLocation(m_program, "diffuseTex")};
+  auto const mappingModeLoc{abcg::glGetUniformLocation(m_program, "mappingMode")};
 
   // Set uniform variables that have the same value for every model
   abcg::glUniformMatrix4fv(viewMatrixLoc, 1, GL_FALSE, &m_viewMatrix[0][0]);
   abcg::glUniformMatrix4fv(projMatrixLoc, 1, GL_FALSE, &m_projMatrix[0][0]);
+  abcg::glUniform1i(diffuseTexLoc, 0);
+  abcg::glUniform1i(mappingModeLoc, m_mappingMode);
   // abcg::glUniform4f(colorLoc, 1.0f, 1.0f, 1.0f, 1.0f); // White
 
   // auto const lightDirRotated{m_trackBallLight.getRotation() * m_lightDir};

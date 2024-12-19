@@ -1,5 +1,6 @@
 #include "model.hpp"
 
+#include <filesystem>
 #include <unordered_map>
 
 // Explicit specialization of std::hash for Vertex
@@ -7,7 +8,8 @@ template <> struct std::hash<Vertex> {
   size_t operator()(Vertex const &vertex) const noexcept {
     auto const h1{std::hash<glm::vec3>()(vertex.position)};
     auto const h2{std::hash<glm::vec3>()(vertex.normal)};
-    return abcg::hashCombine(h1, h2);
+    auto const h3{std::hash<glm::vec2>()(vertex.texCoord)};
+    return abcg::hashCombine(h1, h2, h3);
   }
 };
 
@@ -65,10 +67,23 @@ void Model::createBuffers() {
   abcg::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
+void Model::loadDiffuseTexture(std::string_view path) {
+  if (!std::filesystem::exists(path))
+    return;
+
+  abcg::glDeleteTextures(1, &m_diffuseTexture);
+  m_diffuseTexture = abcg::loadOpenGLTexture({.path = path});
+}
+
 void Model::loadObj(std::string_view path, bool standardize) {
+  auto const basePath{std::filesystem::path{path}.parent_path().string() + "/"};
+
+  tinyobj::ObjReaderConfig readerConfig;
+  readerConfig.mtl_search_path = basePath; // Path to material files
+
   tinyobj::ObjReader reader;
 
-  if (!reader.ParseFromFile(path.data())) {
+  if (!reader.ParseFromFile(path.data(), readerConfig)) {
     if (!reader.Error().empty()) {
       throw abcg::RuntimeError(
           fmt::format("Failed to load model {} ({})", path, reader.Error()));
@@ -82,11 +97,13 @@ void Model::loadObj(std::string_view path, bool standardize) {
 
   auto const &attrib{reader.GetAttrib()};
   auto const &shapes{reader.GetShapes()};
+  auto const &materials{reader.GetMaterials()};
 
   m_vertices.clear();
   m_indices.clear();
 
   m_hasNormals = false;
+  m_hasTexCoords = false;
 
   // A key:value map with key=Vertex and value=index
   std::unordered_map<Vertex, GLuint> hash{};
@@ -98,13 +115,13 @@ void Model::loadObj(std::string_view path, bool standardize) {
       // Access to vertex
       auto const index{shape.mesh.indices.at(offset)};
 
-      // Vertex position
+      // Position
       auto const startIndex{3 * index.vertex_index};
       glm::vec3 position{attrib.vertices.at(startIndex + 0),
                          attrib.vertices.at(startIndex + 1),
                          attrib.vertices.at(startIndex + 2)};
 
-      // Vertex normal
+      // Normal
       glm::vec3 normal{};
       if (index.normal_index >= 0) {
         m_hasNormals = true;
@@ -114,7 +131,17 @@ void Model::loadObj(std::string_view path, bool standardize) {
                   attrib.normals.at(normalStartIndex + 2)};
       }
 
-      Vertex const vertex{.position = position, .normal = normal};
+      // Texture coordinates
+      glm::vec2 texCoord{};
+      if (index.texcoord_index >= 0) {
+        m_hasTexCoords = true;
+        auto const texCoordsStartIndex{2 * index.texcoord_index};
+        texCoord = {attrib.texcoords.at(texCoordsStartIndex + 0),
+                    attrib.texcoords.at(texCoordsStartIndex + 1)};
+      }
+
+      Vertex const vertex{
+          .position = position, .normal = normal, .texCoord = texCoord};
 
       // If hash doesn't contain this vertex
       if (!hash.contains(vertex)) {
@@ -126,6 +153,24 @@ void Model::loadObj(std::string_view path, bool standardize) {
 
       m_indices.push_back(hash[vertex]);
     }
+  }
+
+  // Use properties of first material, if available
+  if (!materials.empty()) {
+    auto const &mat{materials.at(0)}; // First material
+    m_Ka = {mat.ambient[0], mat.ambient[1], mat.ambient[2], 1};
+    m_Kd = {mat.diffuse[0], mat.diffuse[1], mat.diffuse[2], 1};
+    m_Ks = {mat.specular[0], mat.specular[1], mat.specular[2], 1};
+    m_shininess = mat.shininess;
+
+    if (!mat.diffuse_texname.empty())
+      loadDiffuseTexture(basePath + mat.diffuse_texname);
+  } else {
+    // Default values
+    m_Ka = {0.1f, 0.1f, 0.1f, 1.0f};
+    m_Kd = {0.7f, 0.7f, 0.7f, 1.0f};
+    m_Ks = {1.0f, 1.0f, 1.0f, 1.0f};
+    m_shininess = 25.0f;
   }
 
   if (standardize) {
@@ -141,6 +186,17 @@ void Model::loadObj(std::string_view path, bool standardize) {
 
 void Model::render(int numTriangles) const {
   abcg::glBindVertexArray(m_VAO);
+
+  abcg::glActiveTexture(GL_TEXTURE0);
+  abcg::glBindTexture(GL_TEXTURE_2D, m_diffuseTexture);
+
+  // Set minification and magnification parameters
+  abcg::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  abcg::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  // Set texture wrapping parameters
+  abcg::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  abcg::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
   auto const numIndices{(numTriangles < 0) ? m_indices.size()
                                            : numTriangles * 3};
@@ -180,6 +236,16 @@ void Model::setupVAO(GLuint program) {
                                 reinterpret_cast<void *>(offset));
   }
 
+  auto const texCoordAttribute{
+      abcg::glGetAttribLocation(program, "inTexCoord")};
+  if (texCoordAttribute >= 0) {
+    abcg::glEnableVertexAttribArray(texCoordAttribute);
+    auto const offset{offsetof(Vertex, texCoord)};
+    abcg::glVertexAttribPointer(texCoordAttribute, 2, GL_FLOAT, GL_FALSE,
+                                sizeof(Vertex),
+                                reinterpret_cast<void *>(offset));
+  }
+
   // End of binding
   abcg::glBindBuffer(GL_ARRAY_BUFFER, 0);
   abcg::glBindVertexArray(0);
@@ -204,7 +270,8 @@ void Model::standardize() {
   }
 }
 
-void Model::destroy() const {
+void Model::destroy() {
+  abcg::glDeleteTextures(1, &m_diffuseTexture);
   abcg::glDeleteBuffers(1, &m_EBO);
   abcg::glDeleteBuffers(1, &m_VBO);
   abcg::glDeleteVertexArrays(1, &m_VAO);
