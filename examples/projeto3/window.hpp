@@ -34,7 +34,7 @@ private:
     glm::vec3 m_rotationAxis{};
   };
 
-  std::array<Star, 100> m_stars;
+  std::array<Star, 9> m_stars;
   Ship m_ship;
 
   float m_angle{90.0};

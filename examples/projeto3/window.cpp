@@ -34,7 +34,7 @@ void Window::onCreate() {
 
   float x = 0.0f;
   float y = -0.3f; // Mantém Y fixo
-  float z = -2.0f; // Mantém Z fixo
+  float z = -3.0f; // Mantém Z fixo
 
   m_ship.m_position = glm::vec3(x, y, z);
 
@@ -46,7 +46,7 @@ void Window::onCreate() {
 
 void Window::randomizeStar(Star &star, int index) {
   // Define a linha no eixo X, com espaçamento fixo
-  float spacing = 2.0f; // Espaçamento entre as estrelas
+  float spacing = 0.2f; // Espaçamento entre as estrelas
   float startX = -50.0f; // Posição inicial no eixo X
 
   // Calcula a posição baseada no índice
@@ -57,32 +57,10 @@ void Window::randomizeStar(Star &star, int index) {
   star.m_position = glm::vec3(x, y, z);
 
   // Define um eixo de rotação aleatório
-  // star.m_rotationAxis = glm::sphericalRand(1.0f);
   star.m_rotationAxis = glm::vec3(1.0, 1.0, 1.0);
 }
 
-// void Window::onEvent(SDL_Event const &event) {
-//   if (event.type == SDL_KEYDOWN) {
-//     switch (event.key.keysym.sym) {
-//     case SDLK_UP: // Mover para cima
-//       m_ship.m_position.y += 0.1f;
-//       break;
-//     case SDLK_DOWN: // Mover para baixo
-//       m_ship.m_position.y -= 0.1f;
-//       break;
-//     case SDLK_LEFT: // Mover para a esquerda
-//       m_ship.m_position.x -= 0.1f;
-//       break;
-//     case SDLK_RIGHT: // Mover para a direita
-//       m_ship.m_position.x += 0.1f;
-//       break;
-//     }
-//   }
 
-//   // Limites para evitar que o astronauta saia da tela
-//   m_ship.m_position.x = std::clamp(m_ship.m_position.x, -0.5f, 0.5f);
-//   m_ship.m_position.y = std::clamp(m_ship.m_position.y, -0.5f, 0.5f);
-// }
 
 void Window::onEvent(SDL_Event const &event) {
   static bool spacePressed = false; // Track if SPACE is pressed
@@ -124,8 +102,8 @@ void Window::onEvent(SDL_Event const &event) {
   }
 
   // Clamp positions to defined bounds
-  m_ship.m_position.x = std::clamp(m_ship.m_position.x, -0.5f, 0.5f);
-  m_ship.m_position.y = std::clamp(m_ship.m_position.y, -0.5f, 0.5f);
+  m_ship.m_position.x = std::clamp(m_ship.m_position.x, -1.0f, 1.0f);
+  m_ship.m_position.y = std::clamp(m_ship.m_position.y, -1.0f, 1.0f);
   // m_ship.m_position.z = std::clamp(m_ship.m_position.z, 0.0f, 5.0f); // Assuming bounds for z-axis
 }
 
@@ -136,8 +114,8 @@ void Window::onUpdate() {
   m_angle = glm::wrapAngle(m_angle);
 
   // Define grid dimensions
-  constexpr int gridCols = 10; // Number of columns in the grid
-  constexpr int gridSpacing = 2; // Spacing between stars in the grid
+  constexpr int gridCols = 3; // Number of columns in the grid
+  constexpr float gridSpacing = 0.4f; // Spacing between stars in the grid
   constexpr float bounceAmplitude = 0.5f; // Amplitude of the bouncing motion
   constexpr float bounceSpeed = 1.0f; // Speed of the bouncing motion
 
@@ -168,7 +146,7 @@ void Window::onUpdate() {
       randomizeStar(star, i);
 
       // Reset position based on grid
-      star.m_position.z = -100.0f; // Reset to initial Z position
+      star.m_position.z = -70.0f; // Reset to initial Z position
     }
   }
 }
