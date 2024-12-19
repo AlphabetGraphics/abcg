@@ -205,7 +205,7 @@ void Window::onPaint() {
   // abcg::glUniform4f(colorLoc, 1.0f, 1.0f, 1.0f, 1.0f); // White
 
   // auto const lightDirRotated{m_trackBallLight.getRotation() * m_lightDir};
-  // abcg::glUniform4fv(lightDirLoc, 1, &lightDirRotated.x);
+  abcg::glUniform4fv(lightDirLoc, 1, &m_lightDir.x);
   abcg::glUniform4fv(IaLoc, 1, &m_Ia.x);
   abcg::glUniform4fv(IdLoc, 1, &m_Id.x);
   abcg::glUniform4fv(IsLoc, 1, &m_Is.x);
@@ -235,16 +235,17 @@ void Window::onPaint() {
   auto const normalMatrix{glm::inverseTranspose(modelViewMatrix)};
   abcg::glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, &normalMatrix[0][0]);
 
-  // Desenhar o astronauta fixo
+  // Desenhar a nave fixa
   glm::mat4 modelMatrix{1.0f};
   modelMatrix = glm::translate(modelMatrix, m_ship.m_position); // Parte inferior central
   modelMatrix = glm::scale(modelMatrix, glm::vec3(0.2f)); // Ajusta o tamanho
   modelMatrix = glm::rotate(modelMatrix, 11.0f, m_ship.m_rotationAxis);
+  modelMatrix = glm::rotate(modelMatrix, glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
   // Enviar as matrizes para o shader
   abcg::glUniformMatrix4fv(modelMatrixLoc, 1, GL_FALSE, &modelMatrix[0][0]);
 
-  // Renderizar o astronauta
+  // Renderizar a nave
   m_model_ship.render();
 
   abcg::glUseProgram(0);

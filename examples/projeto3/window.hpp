@@ -49,14 +49,14 @@ private:
   void randomizeStar(Star &star, int index);
 
   // Light and material properties
-  glm::vec4 m_lightDir{0.0f, 0.0f, -1.0f, 0.0f};
+  glm::vec4 m_lightDir{0.0f, -0.3f, -2.0f, 0.0f};
   glm::vec4 m_Ia{1.0f};
   glm::vec4 m_Id{1.0f};
   glm::vec4 m_Is{1.0f};
   glm::vec4 m_Ka{0.2f, 0.2f, 0.2f, 1.0f};
   glm::vec4 m_Kd{0.8f, 0.8f, 0.8f, 1.0f};
   glm::vec4 m_Ks{1.0f};
-  float m_shininess{25.0f};
+  float m_shininess{200.0f};
 };
 
 #endif
